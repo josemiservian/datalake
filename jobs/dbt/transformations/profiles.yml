@@ -1,0 +1,22 @@
+trino:
+  target: "{{ env_var('DBT_TARGET', 'prod') }}"
+  outputs:
+    prod:
+      type: trino
+      method: none
+      host: trino
+      port: 8080
+      user: trino
+      password: ''
+      database: iceberg
+      schema: gold
+    
+    dev:
+      type: trino
+      method: none
+      host: localhost
+      port: 8080
+      user: trino
+      password: ''
+      database: iceberg
+      schema: gold            

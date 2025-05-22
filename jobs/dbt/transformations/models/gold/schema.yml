@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: snbe_travels_per_bus_daily
+    description: "Agregación diaria de viajes por bus con estrategia append-only"
+    config:
+      incremental_strategy: append
+    columns:
+      - name: id_transporte
+        description: "Identificador único del transporte"
+        tests:
+          - not_null
+          
+      - name: id_ruta
+        description: "Identificador de la ruta"
+        tests:
+          - not_null
+          
+      - name: fecha_viaje
+        description: "Fecha del viaje"
+        tests:
+          - not_null
+          - recency:
+              datepart: day
+              interval: 30
+              
+      - name: total_recaudado
+        description: "Suma total recaudada"
+        tests:
+          - not_null
+          - not_negative
+
+  - name: test
+    description: "A starter dbt model"
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null        
