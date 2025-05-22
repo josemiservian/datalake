@@ -2,7 +2,7 @@
 airflow/dags/__pycache__/
 airflow/logs/*
 jobs/__pycache__/
-jobs/dbt-env
+jobs/dbt/dbt-env
 jobs/logs
 # MinIO data
 lake/data
