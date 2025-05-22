@@ -1,0 +1,14 @@
+sources:
+  - name: silver
+    schema: silver
+    database: iceberg
+    tables:
+      - name: snbe
+        description: "Datos de SNBE"
+      - name: test  
+  - name: gold
+    schema: gold
+    database: iceberg
+    tables:
+      - name: snbe_active_users_daily
+        description: "Users active per day"

@@ -86,4 +86,4 @@ docker compose up --build -d
 ```
 # Arquitecture 
 
-![Open-Source Datalake Arquitecture.](/img/open-source-datalake.png "Open-Source Datalake Arquitecture.")
+![Open-Source Datalake Arquitecture.](./img/open-source-datalake.png "Open-Source Datalake Arquitecture.")
