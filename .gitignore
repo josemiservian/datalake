@@ -1,0 +1,10 @@
+.env
+airflow/dags/__pycache__/
+airflow/logs/*
+jobs/__pycache__/
+jobs/dbt-env
+jobs/logs
+# MinIO data
+lake/data
+logs
+viz/superset_data
