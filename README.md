@@ -84,6 +84,7 @@ python3 -m venv dbt-env
 ```
 docker compose up --build -d
 ```
-# Arquitecture 
+# Architecture 
+
 
 ![Open-Source Datalake Arquitecture.](./img/open-source-datalake.png "Open-Source Datalake Arquitecture.")
