@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+: "${SUPERSET_DB_USER:?}" "${SUPERSET_DB_PASSWORD:?}" "${SUPERSET_ADMIN_USERNAME:?}" "${SUPERSET_ADMIN_PASSWORD:?}"
 
 # Función para verificar PostgreSQL
 check_postgres() {
@@ -7,7 +8,7 @@ check_postgres() {
     local retry_interval=5
     
     for ((i=1; i<=max_retries; i++)); do
-        if PGPASSWORD='superset' psql -h postgres -U superset -d superset -c "SELECT 1" &>/dev/null; then
+        if PGPASSWORD="$SUPERSET_DB_PASSWORD" psql -h postgres -U "$SUPERSET_DB_USER" -d superset -c "SELECT 1" &>/dev/null; then
             echo "[✓] PostgreSQL accesible"
             return 0
         fi
@@ -29,11 +30,11 @@ superset db upgrade
 
 echo "Creando admin..."
 superset fab create-admin \
-  --username admin \
+  --username "$SUPERSET_ADMIN_USERNAME" \
   --firstname Admin \
   --lastname Superset \
   --email admin@superset.com \
-  --password superset
+  --password "$SUPERSET_ADMIN_PASSWORD"
 
 echo "Inicializando..."
 superset init

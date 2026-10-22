@@ -8,12 +8,13 @@ x-airflow-common:
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres/airflow
     # For backward compatibility, with Airflow <2.3
-    # AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    # AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${AIRFLOW_DB_USER}:${AIRFLOW_DB_PASSWORD}@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:?set AIRFLOW_SECRET_KEY in .env}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
@@ -58,7 +59,7 @@ x-airflow-common:
 
 x-spark-common: 
   &spark-common
-  image: bitnami/spark:3.5
+  image: bitnamilegacy/spark:3.5
   build: 
       context: .
       dockerfile: Dockerfile.spark
@@ -72,17 +73,18 @@ services:
     container_name: postgres
     image: postgres:13
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_USER: ${AIRFLOW_DB_USER:?set AIRFLOW_DB_USER in .env}
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?set AIRFLOW_DB_PASSWORD in .env}
       POSTGRES_DB: airflow
       # Nuevo para SUPERSET
       POSTGRES_MULTIPLE_DATABASES: superset  # Nueva variable
-      POSTGRES_MULTIPLE_USERS: superset:superset  # usuario:contraseña
+      SUPERSET_DB_USER: ${SUPERSET_DB_USER:?set SUPERSET_DB_USER in .env}
+      SUPERSET_DB_PASSWORD: ${SUPERSET_DB_PASSWORD:?set SUPERSET_DB_PASSWORD in .env}
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
       - ./init-scripts/init-superset-db.sh:/docker-entrypoint-initdb.d/init-superset-db.sh
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
       retries: 5
       start_period: 5s
@@ -92,7 +94,7 @@ services:
 
   redis:
     container_name: redis
-    image: redis:latest
+    image: redis:7.4
     expose:
       - 6379
     healthcheck:
@@ -115,7 +117,7 @@ services:
     ports:
       - 9093:8080
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:9093/health"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -276,8 +278,8 @@ services:
       <<: *airflow-common-env
       _AIRFLOW_DB_UPGRADE: 'true'
       _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
-      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:?set _AIRFLOW_WWW_USER_USERNAME in .env}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:?set _AIRFLOW_WWW_USER_PASSWORD in .env}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
@@ -338,6 +340,9 @@ services:
     volumes:
       - ./lake/etc:/usr/lib/trino/etc:ro
       - ./lake/etc/catalog:/etc/trino/catalog
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
       # - ./plugins:/usr/lib/trino/plugin
     deploy:
       resources:
@@ -354,9 +359,9 @@ services:
     ports:
       - 3306:3306
     environment:
-      MYSQL_ROOT_PASSWORD: admin
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      MYSQL_USER: ${METASTORE_DB_USER:?set METASTORE_DB_USER in .env}
+      MYSQL_PASSWORD: ${METASTORE_DB_PASSWORD:?set METASTORE_DB_PASSWORD in .env}
       MYSQL_DATABASE: metastore
     networks:
       - data-stack
@@ -377,6 +382,10 @@ services:
     environment:
       # DB_TYPE: mysql
       METASTORE_DB_HOSTNAME: mariadb
+      METASTORE_DB_USER: ${METASTORE_DB_USER:?set METASTORE_DB_USER in .env}
+      METASTORE_DB_PASSWORD: ${METASTORE_DB_PASSWORD:?set METASTORE_DB_PASSWORD in .env}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
       # HIVE_EXECUTION_ENGINE: mr 
     depends_on:
       - mariadb
@@ -385,7 +394,7 @@ services:
 
   minio:
     hostname: minio
-    image: minio/minio:latest
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     container_name: minio
     ports:
       - '9000:9000'
@@ -394,8 +403,8 @@ services:
       # - /mnt/d/Desarrollo/datalake/data:/data
       - ./lake/data:/data
     environment:
-      MINIO_ROOT_USER: josemi
-      MINIO_ROOT_PASSWORD: ***REMOVED***
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
     command: server /data --console-address ":9001"
     networks:
       - data-stack
@@ -411,7 +420,7 @@ services:
       - SPARK_PUBLIC_DNS=spark-master
     ports:
       - "7077:7077"
-      - "8081:8080"
+      - "8081:8081"
     networks:
       - data-stack
 
@@ -427,13 +436,13 @@ services:
       - SPARK_WORKER_WEBUI_PORT=8082
       - SPARK_PUBLIC_DNS=spark-worker
     ports:
-      - "8082:8080"
+      - "8082:8082"
     networks:
       - data-stack
 # Superset
   superset:
     container_name: superset
-    image: apache/superset:latest
+    image: apache/superset:4.1.2
     build:
       context: .
       dockerfile: Dockerfile.superset
@@ -441,10 +450,10 @@ services:
     ports:
       - "8088:8088"
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@postgres/superset
-      - SUPERSET_SECRET_KEY=***REMOVED***  
-      - SUPERSET_FAB_ADMIN_USERNAME=admin
-      - SUPERSET_FAB_ADMIN_PASSWORD=superset
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@postgres/superset
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:?set SUPERSET_SECRET_KEY in .env}
+      - SUPERSET_FAB_ADMIN_USERNAME=${SUPERSET_ADMIN_USERNAME:?set SUPERSET_ADMIN_USERNAME in .env}
+      - SUPERSET_FAB_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD:?set SUPERSET_ADMIN_PASSWORD in .env}
       - SUPERSET_FAB_ADMIN_EMAIL=admin@superset.com
       - _PIP_ADDITIONAL_REQUIREMENTS=sqlalchemy-trino psycopg2-binary pymysql
     volumes:
@@ -458,7 +467,7 @@ services:
 
   superset-init:
     container_name: superset-init
-    image: apache/superset:latest
+    image: apache/superset:4.1.2
     build: 
       context: .
       dockerfile: Dockerfile.superset
@@ -470,8 +479,12 @@ services:
       - ./viz/superset_data:/app/superset_home
     command: ["bash", "/app/superset-init.sh"]
     environment:
-      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://superset:superset@postgres/superset
-      - SUPERSET_SECRET_KEY=***REMOVED***
+      - SUPERSET_DB_USER=${SUPERSET_DB_USER:?set SUPERSET_DB_USER in .env}
+      - SUPERSET_DB_PASSWORD=${SUPERSET_DB_PASSWORD:?set SUPERSET_DB_PASSWORD in .env}
+      - SUPERSET_ADMIN_USERNAME=${SUPERSET_ADMIN_USERNAME:?set SUPERSET_ADMIN_USERNAME in .env}
+      - SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD:?set SUPERSET_ADMIN_PASSWORD in .env}
+      - SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://${SUPERSET_DB_USER}:${SUPERSET_DB_PASSWORD}@postgres/superset
+      - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:?set SUPERSET_SECRET_KEY in .env}
     networks:
       - data-stack
 

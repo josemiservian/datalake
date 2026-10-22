@@ -42,8 +42,44 @@ Gold: Business aggregates
 
 Create the directories first: 
 ```
-mkdir -p ./airflow/dags ./airflow/logs ./airflow/plugins ./airflow/config ./airflow/sql ./airflow/profile \\
-echo -e "AIRFLOW_UID=$(id -u)" > .env
+mkdir -p ./airflow/dags ./airflow/logs ./airflow/plugins ./airflow/config ./airflow/sql ./airflow/profile
+echo "AIRFLOW_UID=$(id -u)" > .env
+```
+## MinIO
+
+Add the MinIO root credentials (console and S3 API) to `.env`:
+```
+echo "MINIO_ROOT_USER=<user>" >> .env
+echo "MINIO_ROOT_PASSWORD=<password>" >> .env
+```
+Create a MinIO access key for Trino and the Hive Metastore and add it to `.env`:
+```
+echo "MINIO_ACCESS_KEY=<access-key>" >> .env
+echo "MINIO_SECRET_KEY=<secret-key>" >> .env
+```
+## Service credentials
+
+Database and admin users for local development. Database passwords end up in connection URLs, so avoid `@`, `:`, `/` and `%`.
+```
+cat >> .env <<EOF
+AIRFLOW_DB_USER=<user>
+AIRFLOW_DB_PASSWORD=<password>
+_AIRFLOW_WWW_USER_USERNAME=<user>
+_AIRFLOW_WWW_USER_PASSWORD=<password>
+SUPERSET_DB_USER=<user>
+SUPERSET_DB_PASSWORD=<password>
+SUPERSET_ADMIN_USERNAME=<user>
+SUPERSET_ADMIN_PASSWORD=<password>
+MARIADB_ROOT_PASSWORD=<password>
+METASTORE_DB_USER=<user>
+METASTORE_DB_PASSWORD=<password>
+EOF
+```
+## Secret keys
+
+```
+echo "AIRFLOW_SECRET_KEY=$(openssl rand -base64 16)" >> .env
+echo "SUPERSET_SECRET_KEY=$(openssl rand -base64 42)" >> .env
 ```
 ## Virtual Environment (in WSL)
 
@@ -71,13 +107,13 @@ python3 -m venv dbt-env
 * **Docker**: 4.4.0
 * **Airflow**: apache/airflow:2.9.0-python3.12
 * **Postgres**: postgres:13
-* **Spark**: bitnami/spark:3.5
-* **Redis**: redis/latest
+* **Spark**: bitnamilegacy/spark:3.5
+* **Redis**: redis:7.4
 * **Trino**: trinodb/trino:424
 * **MariaDB**: mariadb:10.5.8
 * **Hive-Metastore**: bitsondatadev/hive-metastore:latest
-* **MinIO**: minio/minio:latest
-* **Superset**: apache/superset:latest
+* **MinIO**: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+* **Superset**: apache/superset:4.1.2
 
 # Create containers
 
