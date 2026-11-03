@@ -1,4 +1,5 @@
 .env
+.venv-bronze/
 airflow/dags/__pycache__/
 airflow/logs/*
 jobs/__pycache__/
