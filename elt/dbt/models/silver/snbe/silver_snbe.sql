@@ -1,5 +1,5 @@
 {#
-    Replaces the old per-file INSERT loop (airflow/dags/snbe/silver_snbe.py + jobs/sql/snbe/).
+    Replaces the old per-file INSERT loop (old insert_iceberg_silver_snbe DAG + jobs/sql/snbe/).
     Each run loads only the Bronze files whose path is not yet in Silver (_source_path).
 
     The pre-existing iceberg.silver.snbe has no _source_path column, so the first run

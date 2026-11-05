@@ -42,7 +42,7 @@ Gold: Business aggregates
 
 Create the directories first: 
 ```
-mkdir -p ./airflow/dags ./airflow/logs ./airflow/plugins ./airflow/config
+mkdir -p ./orchestration/airflow/{dags,logs,plugins,config} ./data/minio
 echo "AIRFLOW_UID=$(id -u)" > .env
 ```
 ## MinIO
@@ -120,31 +120,53 @@ python3 -m venv dbt-env
 ```
 docker compose up --build -d
 ```
-# ELT layout
-
-Jobs are grouped by stage, then by domain. `./elt` is mounted at `/opt/airflow/elt` (Airflow) and `/opt/bitnami/spark/elt` (Spark).
+# Repository layout
 
 ```
+docker/                     # Dockerfiles (build context) and container init scripts
+infra/
+├── trino/etc/              # Trino config + catalogs (minio, iceberg, ...)
+└── hive-metastore/         # metastore-site.xml
+orchestration/airflow/
+├── config/                 # config.cfg (AIRFLOW_CONFIG)
+├── dags/
+│   ├── <domain>/           # One DAG per dataset, e.g. snbe/snbe_pipeline.py
+│   └── _examples/          # Stack smoke tests (Spark, Trino)
+├── logs/                   # (ignored)
+└── plugins/
 elt/
-├── ingestion/            # Bronze: extract + load into MinIO
-│   ├── requirements.txt  # DuckDB-based loaders (run from the host)
-│   └── banking/          # Itahu Postgres -> s3://bronze/banking/
-├── ddl/                  # Trino DDL for schemas and Bronze external tables
+├── ingestion/              # Bronze: extract + load into MinIO
+│   ├── requirements.txt    # DuckDB-based loaders (run from the host)
+│   └── banking/            # Itahu Postgres -> s3://bronze/banking/
+├── ddl/                    # Trino DDL for schemas and Bronze external tables
 │   ├── create_schemas.sql
 │   └── bronze/{banking,ips,tsje}/
-├── metadata/             # Schema/metadata exporters (minio.metadata.datalake_schemas)
-├── dbt/                  # Silver + Gold (single dbt project)
+├── metadata/               # Schema/metadata exporters (minio.metadata.datalake_schemas)
+├── dbt/                    # Silver + Gold (single dbt project)
 │   └── models/
 │       ├── silver/<domain>/
 │       └── gold/<domain>/
-└── spark/examples/       # Spark smoke test (airflow/dags/_examples/test_spark_dag.py)
-
-airflow/dags/
-├── <domain>/             # One folder per domain (e.g. snbe/)
-└── _examples/            # Stack smoke tests (Spark, Trino)
+└── spark/examples/         # Spark smoke test (used by _examples/test_spark_dag.py)
+data/minio/                 # MinIO data (ignored)
+viz/                        # Superset home
 ```
 
-dbt schemas are taken verbatim from `+schema` (`macros/generate_schema_name.sql`): `silver/` models land in `iceberg.silver`, `gold/` in `iceberg.gold`.
+`./elt` is mounted at `/opt/airflow/elt` (Airflow) and `/opt/bitnami/spark/elt` (Spark).
+
+dbt schemas are taken verbatim from `+schema` (`macros/generate_schema_name.sql`): `silver/` models land in `iceberg.silver`, `gold/` in `iceberg.gold`. The Trino connection in `elt/dbt/profiles.yml` can be overridden with `DBT_TRINO_HOST`, `DBT_TRINO_PORT` and `DBT_TRINO_USER`.
+
+## Migrating an existing clone
+
+MinIO data and Airflow logs are not tracked, so move them by hand after pulling (with the stack down):
+```
+docker compose down
+mkdir -p data orchestration/airflow
+mv lake/data data/minio
+mv airflow/logs orchestration/airflow/logs   # optional, keeps old task logs
+rm -rf lake airflow                          # only empty leftovers remain
+docker compose up --build -d
+```
+The three old SNBE DAGs (`insert_iceberg_silver_snbe`, `snbe_active_users_cumulated`, `snbe_travels_per_bus_daily`) are replaced by `snbe_pipeline`; their run history stays in the Airflow DB until deleted from the UI.
 
 # Architecture 
 

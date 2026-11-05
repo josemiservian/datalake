@@ -29,10 +29,10 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     AIRFLOW_CONFIG: '/opt/airflow/config/config.cfg'
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-./orchestration/airflow}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR:-./orchestration/airflow}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-./orchestration/airflow}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-./orchestration/airflow}/plugins:/opt/airflow/plugins
     - ./elt:/opt/airflow/elt
     # - ./config:/opt/airflow/config
     # - ./dags:/opt/airflow/dags
@@ -77,7 +77,7 @@ services:
       SUPERSET_DB_PASSWORD: ${SUPERSET_DB_PASSWORD:?set SUPERSET_DB_PASSWORD in .env}
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
-      - ./init-scripts/init-superset-db.sh:/docker-entrypoint-initdb.d/init-superset-db.sh
+      - ./docker/init-scripts/init-superset-db.sh:/docker-entrypoint-initdb.d/init-superset-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
@@ -190,7 +190,7 @@ services:
     <<: *airflow-common
     container_name: airflow-init
     build:
-      context: .
+      context: ./docker
       dockerfile: Dockerfile.airflow
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
@@ -266,7 +266,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/airflow/sources
+      - ${AIRFLOW_PROJ_DIR:-./orchestration/airflow}:/sources
     networks:
       - data-stack
 
@@ -315,8 +315,8 @@ services:
     ports:
       - '8080:8080'
     volumes:
-      - ./lake/etc:/usr/lib/trino/etc:ro
-      - ./lake/etc/catalog:/etc/trino/catalog
+      - ./infra/trino/etc:/usr/lib/trino/etc:ro
+      - ./infra/trino/etc/catalog:/etc/trino/catalog
     environment:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in .env}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
@@ -354,8 +354,8 @@ services:
     ports:
       - '9083:9083' # Metastore Thrift
     volumes:
-      - ./lake/conf/metastore-site.xml:/opt/apache-hive-metastore-3.0.0-bin/conf/metastore-site.xml:ro
-    #   - ./lake/conf/tez-site.xml:/opt/tez/conf/tez-site.xml:ro
+      - ./infra/hive-metastore/metastore-site.xml:/opt/apache-hive-metastore-3.0.0-bin/conf/metastore-site.xml:ro
+    #   - ./infra/hive-metastore/tez-site.xml:/opt/tez/conf/tez-site.xml:ro
     environment:
       # DB_TYPE: mysql
       METASTORE_DB_HOSTNAME: mariadb
@@ -378,7 +378,7 @@ services:
       - '9001:9001'
     volumes:
       # - /mnt/d/Desarrollo/datalake/data:/data
-      - ./lake/data:/data
+      - ./data/minio:/data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
@@ -391,7 +391,7 @@ services:
     <<: *spark-common
     container_name: spark-master
     build:
-      context: .
+      context: ./docker
       dockerfile: Dockerfile.spark
     environment:
       - SPARK_MODE=master
@@ -424,7 +424,7 @@ services:
     container_name: superset
     image: datalake-superset:4.1.2
     build:
-      context: .
+      context: ./docker
       dockerfile: Dockerfile.superset
     restart: always
     ports:
@@ -454,7 +454,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./init-scripts/superset-init.sh:/app/superset-init.sh
+      - ./docker/init-scripts/superset-init.sh:/app/superset-init.sh
       - ./viz/superset_data:/app/superset_home
     command: ["bash", "/app/superset-init.sh"]
     environment:
