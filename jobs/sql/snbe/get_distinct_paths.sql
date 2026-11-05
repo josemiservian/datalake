@@ -1,1 +1,0 @@
-SELECT DISTINCT "$path" as file_path FROM minio.bronze.snbe

@@ -29,12 +29,3 @@ models:
         tests:
           - not_null
           - not_negative
-
-  - name: test
-    description: "A starter dbt model"
-    columns:
-      - name: id
-        description: "The primary key for this table"
-        data_tests:
-          - unique
-          - not_null        

@@ -2,9 +2,10 @@
 .venv-bronze/
 airflow/dags/__pycache__/
 airflow/logs/*
-jobs/__pycache__/
-jobs/dbt/dbt-env
-jobs/logs
+**/__pycache__/
+elt/dbt/dbt-env
+elt/dbt/.user.yml
+elt/dbt/logs
 # MinIO data
 lake/data
 logs

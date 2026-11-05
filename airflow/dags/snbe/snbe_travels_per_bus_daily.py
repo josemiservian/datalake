@@ -54,7 +54,7 @@ with DAG(
 
     dbt = BashOperator(
         task_id='dbt_incremental_job',
-        bash_command='cd /opt/airflow/jobs/dbt/transformations && dbt run --models gold.snbe_travels_per_bus_daily',
+        bash_command='cd /opt/airflow/elt/dbt && dbt run --select snbe_travels_per_bus_daily',
     )
 
     end = PythonOperator(

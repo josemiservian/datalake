@@ -2,6 +2,7 @@ import argparse
 import base64
 import json
 import os
+from pathlib import Path
 import re
 import urllib.request
 from datetime import datetime, timezone
@@ -9,7 +10,8 @@ from datetime import datetime, timezone
 import duckdb
 from dotenv import load_dotenv
 
-BASE = "/home/josemi/repositories/datalake"
+# Repo root, derived from this file so the script runs from any clone.
+BASE = str(Path(__file__).resolve().parents[2])
 load_dotenv(os.path.join(BASE, ".env"))
 
 TABLE_RE = re.compile(

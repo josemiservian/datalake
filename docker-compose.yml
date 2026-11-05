@@ -33,12 +33,7 @@ x-airflow-common:
     - ${AIRFLOW_PROJ_DIR:-.}/airflow/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/airflow/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/airflow/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/sql:/opt/sql
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/datalake:/opt/dbt
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/profile:/opt/dbt/profiles
-    - ${AIRFLOW_PROJ_DIR:-.}/airflow/profile:/opt/airflow/.dbt/
-    - ./jobs:/opt/airflow/jobs
-    # - ${AIRFLOW_PROJ_DIR:-.}/jobs:/opt/airflow/jobs
+    - ./elt:/opt/airflow/elt
     # - ./config:/opt/airflow/config
     # - ./dags:/opt/airflow/dags
     # - ./logs:/opt/airflow/logs
@@ -64,7 +59,7 @@ x-spark-common:
   image: datalake-spark:3.5
   pull_policy: never
   volumes:
-    - ./jobs:/opt/bitnami/spark/jobs
+    - ./elt:/opt/bitnami/spark/elt
   networks:
     - data-stack
 services:

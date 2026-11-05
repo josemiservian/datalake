@@ -27,12 +27,12 @@ with DAG(
 
     daily_task = BashOperator(
         task_id='daily_incremental_job',
-        bash_command='cd /opt/airflow/jobs/dbt/transformations && dbt run --models gold.snbe_active_users_daily',
+        bash_command='cd /opt/airflow/elt/dbt && dbt run --select snbe_active_users_daily',
     )
 
     cumulative_task = BashOperator(
         task_id='cumulative_incremental_job',
-        bash_command='cd /opt/airflow/jobs/dbt/transformations && dbt run --models gold.snbe_active_users_cumulated',
+        bash_command='cd /opt/airflow/elt/dbt && dbt run --select snbe_active_users_cumulated',
     )
     
     end = PythonOperator(

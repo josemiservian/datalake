@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: minio
+    schema: bronze
+    tables:
+      - name: snbe
+        description: "Raw SNBE card events (CSV files in s3a://bronze/snbe/)"

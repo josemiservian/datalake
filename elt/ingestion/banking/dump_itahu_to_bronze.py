@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 import subprocess
 
 import duckdb
 from dotenv import load_dotenv
 
-BASE = "/home/josemi/repositories/datalake"
+# Repo root, derived from this file so the script runs from any clone.
+BASE = str(Path(__file__).resolve().parents[3])
 load_dotenv(os.path.join(BASE, ".env"))
 
 

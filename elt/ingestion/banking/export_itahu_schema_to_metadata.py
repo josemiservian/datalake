@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import subprocess
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -7,7 +8,8 @@ from datetime import datetime, timezone
 import duckdb
 from dotenv import load_dotenv
 
-BASE = "/home/josemi/repositories/datalake"
+# Repo root, derived from this file so the script runs from any clone.
+BASE = str(Path(__file__).resolve().parents[3])
 load_dotenv(os.path.join(BASE, ".env"))
 
 
@@ -51,7 +53,7 @@ DESTINATION_FORMAT = "parquet"
 METADATA_VERSION = 1
 
 TARGET = "s3://bronze/metadata/datalake_schemas/postgres_itahu.parquet"
-SQL_PATH = os.path.join(BASE, "jobs/sql/schemas/get_itahu_schema.sql")
+SQL_PATH = str(Path(__file__).resolve().parent / "sql" / "get_itahu_schema.sql")
 
 with open(SQL_PATH, "r", encoding="utf-8") as f:
     schema_sql = f.read()

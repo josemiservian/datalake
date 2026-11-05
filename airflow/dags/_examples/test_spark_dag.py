@@ -4,7 +4,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 # import sys
-# sys.path.append('/opt/airflow/jobs')
+# sys.path.append('/opt/airflow/elt')
 
 # from test import main
 
@@ -26,7 +26,7 @@ start = PythonOperator(
 python_job = SparkSubmitOperator(
     task_id="python_job",
     conn_id="spark_connection",
-    application="/opt/airflow/jobs/test.py",
+    application="/opt/airflow/elt/spark/examples/wordcount.py",
     verbose=True,
     # conf={
     #     "spark.master": "spark://spark-master:7077",

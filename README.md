@@ -42,7 +42,7 @@ Gold: Business aggregates
 
 Create the directories first: 
 ```
-mkdir -p ./airflow/dags ./airflow/logs ./airflow/plugins ./airflow/config ./airflow/sql ./airflow/profile
+mkdir -p ./airflow/dags ./airflow/logs ./airflow/plugins ./airflow/config
 echo "AIRFLOW_UID=$(id -u)" > .env
 ```
 ## MinIO
@@ -88,7 +88,7 @@ echo "SUPERSET_SECRET_KEY=$(openssl rand -base64 42)" >> .env
 apt install python3.10-venv
 ```
 ### Creation
-Create the virtual env at ./jobs/dbt:
+Create the virtual env at ./elt/dbt:
 ```
 python3 -m venv dbt-env
 ```
@@ -120,6 +120,32 @@ python3 -m venv dbt-env
 ```
 docker compose up --build -d
 ```
+# ELT layout
+
+Jobs are grouped by stage, then by domain. `./elt` is mounted at `/opt/airflow/elt` (Airflow) and `/opt/bitnami/spark/elt` (Spark).
+
+```
+elt/
+├── ingestion/            # Bronze: extract + load into MinIO
+│   ├── requirements.txt  # DuckDB-based loaders (run from the host)
+│   └── banking/          # Itahu Postgres -> s3://bronze/banking/
+├── ddl/                  # Trino DDL for schemas and Bronze external tables
+│   ├── create_schemas.sql
+│   └── bronze/{banking,ips,tsje}/
+├── metadata/             # Schema/metadata exporters (minio.metadata.datalake_schemas)
+├── dbt/                  # Silver + Gold (single dbt project)
+│   └── models/
+│       ├── silver/<domain>/
+│       └── gold/<domain>/
+└── spark/examples/       # Spark smoke test (airflow/dags/_examples/test_spark_dag.py)
+
+airflow/dags/
+├── <domain>/             # One folder per domain (e.g. snbe/)
+└── _examples/            # Stack smoke tests (Spark, Trino)
+```
+
+dbt schemas are taken verbatim from `+schema` (`macros/generate_schema_name.sql`): `silver/` models land in `iceberg.silver`, `gold/` in `iceberg.gold`.
+
 # Architecture 
 
 

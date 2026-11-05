@@ -56,7 +56,7 @@ WITH yesterday AS (
 
 today AS (
     SELECT * 
-    FROM {{ source('gold', 'snbe_active_users_daily') }}
+    FROM {{ ref('snbe_active_users_daily') }}
     WHERE snapshot_date = date'{{ start_date }}'
 ),
 
